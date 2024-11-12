@@ -10,6 +10,7 @@ function App() {
   const [isLoading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
   const [invites, setInvites] = useState([]);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     fetch(`https://reqres.in/api/users`)
@@ -28,15 +29,33 @@ function App() {
     setSearchValue(evt.target.value);
   };
 
+  const onClickInvite = (id) => {
+    if (invites.includes(id)) {
+      setInvites((prev) => prev.filter((el) => el !== id));
+    } else {
+      setInvites((prev) => [...prev, id]);
+    }
+  };
+
+  const onClickSendInvites = () => {
+    setSuccess(true);
+  };
+
   return (
     <div className="App">
-      <Users
-        items={users}
-        isLoading={isLoading}
-        searchValue={searchValue}
-        onChangeSearchValue={onChangeSearchValue}
-      />
-      {/* <Success /> */}
+      {success ? (
+        <Success count={invites.length} />
+      ) : (
+        <Users
+          items={users}
+          isLoading={isLoading}
+          searchValue={searchValue}
+          onChangeSearchValue={onChangeSearchValue}
+          onClickInvite={onClickInvite}
+          invites={invites}
+          onClickSendInvites={onClickSendInvites}
+        />
+      )}
     </div>
   );
 }
