@@ -1,73 +1,79 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Block } from "./Block";
 import "./index.scss";
 
 function App() {
   const [fromCurrency, setFromCurrency] = useState("RUB");
   const [toCurrency, setToCurrency] = useState("USD");
-  const [rates, setRates] = useState([]);
+  const [ratesLoaded, setRatesLoaded] = useState(false);
   const [fromPrice, setFromPrice] = useState(0);
-  const [toPrice, setToPrice] = useState(0);
-  const [indexFrom, setIndexFrom] = useState(17);
-  const [indexTo, setIndexTo] = useState(24);
-  console.log(indexFrom);
-  // const indexRateFrom = rates.findIndex((obj) => obj.cc === fromCurrency);
-  // const indexRateTo = rates.findIndex((obj) => obj.cc === toCurrency);
-  // console.log(indexRateFrom);
-  // console.log(indexRateTo);
+  const [toPrice, setToPrice] = useState(1);
+
+  const ratesRef = useRef([]);
 
   useEffect(() => {
     fetch(`https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?json`)
       .then((res) => res.json())
       .then((json) => {
-        setRates(json);
-        console.log(json);
+        ratesRef.current = json;
+        setRatesLoaded(true);
+        onChangeToPrice(1);
       })
       .catch((err) => {
         console.warn(err);
         alert("error rates");
       });
-    // .finally(() => setLoading(false));
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const indexRateFrom = rates.findIndex((obj) => obj.cc === fromCurrency);
-    const indexRateTo = rates.findIndex((obj) => obj.cc === toCurrency);
-    setIndexFrom(indexRateFrom);
-    setIndexTo(indexRateTo);
+    if (ratesLoaded) {
+      onChangeFromPrice(fromPrice);
+    }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromCurrency, toCurrency]);
+  }, [fromCurrency, ratesLoaded]);
 
   useEffect(() => {
-    onChangeFromPrice(fromPrice);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromCurrency]);
+    if (ratesLoaded) {
+      onChangeToPrice(toPrice);
+    }
 
-  useEffect(() => {
-    onChangeToPrice(toPrice);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toCurrency]);
+  }, [ratesLoaded, toCurrency]);
+
+  const getRatesIndices = () => {
+    const indexRateFrom = ratesRef.current.findIndex(
+      (obj) => obj.cc === fromCurrency
+    );
+    const indexRateTo = ratesRef.current.findIndex(
+      (obj) => obj.cc === toCurrency
+    );
+    return { indexRateFrom, indexRateTo };
+  };
 
   const onChangeFromPrice = (value) => {
-    // const indexRateFrom = rates.findIndex((obj) => obj.cc === fromCurrency);
-    // const indexRateTo = rates.findIndex((obj) => obj.cc === toCurrency);
-    // console.log(indexRateFrom);
-    const price = value * rates[indexFrom].rate; // выбранная валюта в грн
-    const result = price / rates[indexTo].rate;
-    console.log(price);
-    console.log(result);
-    setToPrice(result);
-    setFromPrice(value);
+    const { indexRateFrom, indexRateTo } = getRatesIndices();
+    if (indexRateFrom !== -1 && indexRateTo !== -1) {
+      const price = value * ratesRef.current[indexRateFrom].rate; // выбранная валюта в грн
+      const result = price / ratesRef.current[indexRateTo].rate;
+
+      setToPrice(result.toFixed(4));
+      setFromPrice(value);
+    }
   };
 
   const onChangeToPrice = (value) => {
-    // const indexRateFrom = rates.findIndex((obj) => obj.cc === fromCurrency);
-    // const indexRateTo = rates.findIndex((obj) => obj.cc === toCurrency);
-    // console.log(indexRateFrom);
-    const result = (value * rates[indexTo].rate) / rates[indexFrom].rate;
-    console.log(result);
-    setToPrice(value);
-    setFromPrice(result);
+    const { indexRateFrom, indexRateTo } = getRatesIndices();
+    if (indexRateFrom !== -1 && indexRateTo !== -1) {
+      const result =
+        (value * ratesRef.current[indexRateTo].rate) /
+        ratesRef.current[indexRateFrom].rate;
+
+      setToPrice(value);
+      setFromPrice(result.toFixed(4));
+    }
   };
 
   return (
