@@ -14,13 +14,15 @@ function App() {
   const [searchValue, setSearchValue] = useState("");
   const [categoryId, setCategoryId] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  console.log(page);
 
   useEffect(() => {
     setIsLoading(true);
+    const category = categoryId ? `category=${categoryId}` : "";
+
     fetch(
-      `https://6737b5d84eb22e24fca5ffb0.mockapi.io/api/v1/fotos?${
-        categoryId ? `category=${categoryId}` : ""
-      }`
+      `https://6737b5d84eb22e24fca5ffb0.mockapi.io/api/v1/fotos?page=${page}&limit=3&${category}`
     )
       .then((res) => res.json())
       .then((json) => {
@@ -31,7 +33,7 @@ function App() {
         alert(`error while receiving data`);
       })
       .finally(() => setIsLoading(false));
-  }, [categoryId]);
+  }, [categoryId, page]);
 
   const handleChange = ({ target }) => {
     setSearchValue(target.value.trim());
@@ -67,9 +69,14 @@ function App() {
       </div>
       <div className="content">{isLoading ? <h2>Loading...</h2> : element}</div>
       <ul className="pagination">
-        <li>1</li>
-        <li className="active">2</li>
-        <li>3</li>
+        {[...Array(5)].map((_, index) => (
+          <li
+            onClick={() => setPage(index + 1)}
+            className={page === index + 1 ? "active" : ""}
+          >
+            {index + 1}
+          </li>
+        ))}
       </ul>
     </div>
   );
